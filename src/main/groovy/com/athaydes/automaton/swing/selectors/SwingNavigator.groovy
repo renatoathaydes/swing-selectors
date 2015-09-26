@@ -10,7 +10,7 @@ import javax.swing.tree.TreeNode
 import static com.athaydes.automaton.ReflectionHelper.callMethodIfExists
 
 /**
- *
+ * Methods to navigate through a Swing component tree.
  */
 @CompileStatic
 class SwingNavigator {
@@ -38,7 +38,6 @@ class SwingNavigator {
      * @param action to be called on each visited node. Return true to stop navigating.
      * @return true if action returned true for any node
      */
-    @CompileStatic
     static boolean navigateBreadthFirst( JTree tree, Closure action ) {
         navigateBreadthFirst( tree.model.root as TreeNode, tree.model, action )
     }
@@ -51,7 +50,6 @@ class SwingNavigator {
      * @param action to be called on each visited node. Return true to stop navigating.
      * @return true if action returned true for any node
      */
-    @CompileStatic
     static boolean navigateBreadthFirst( TreeNode startNode, TreeModel model, Closure action ) {
         if ( model ) {
             def nextLevel = [ startNode ]
@@ -74,7 +72,6 @@ class SwingNavigator {
      * @param action to be called on each visited header/cell. Return true to stop navigating.
      * @return true if action returned true for any header/cell
      */
-    @CompileStatic
     static boolean navigateBreadthFirst( JTable table, Closure action ) {
         def cols = ( 0..<table.model.columnCount )
         def rows = ( 0..<table.model.rowCount )
@@ -97,7 +94,6 @@ class SwingNavigator {
      * @param col of the value to get
      * @return The rendered value or the model value if the renderer doesn't have a getText() method
      */
-    @CompileStatic
     private static getRenderedTableValue( JTable table, int row, int col ) {
         def value = table.model.getValueAt( row, col )
         def rendererComp = table.getCellRenderer( row, col )
@@ -106,7 +102,6 @@ class SwingNavigator {
         return text ?: value
     }
 
-    @CompileStatic
     private static List subItemsOf( component ) {
         println "checking component $component"
         def contentPane = callMethodIfExists( component, 'getContentPane' )
@@ -121,7 +116,6 @@ class SwingNavigator {
         return result
     }
 
-    @CompileStatic
     private static visit( List nextLevel, Closure action ) {
         for ( item in nextLevel ) if ( action( item ) ) return true
         return false
