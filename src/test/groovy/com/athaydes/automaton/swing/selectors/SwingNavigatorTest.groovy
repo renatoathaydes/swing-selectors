@@ -153,15 +153,15 @@ class SwingNavigatorTest extends Specification {
         res
     }
 
-    def testNavigateBreadthFirstJTableWholeTree() {
-        given:
+    def "Can navigate a Component Tree starting on a JTable"() {
+        given: 'The table model for a JTable'
         def tModel = [
                 [ firstCol: 'item 1 - Col 1', secCol: 'item 1 - Col 2' ],
                 [ firstCol: 'item 2 - Col 1', secCol: 'item 2 - Col 2' ],
                 [ firstCol: 'item 3 - Col 1', secCol: 'item 3 - Col 2' ]
         ]
 
-        and:
+        and: 'A real JFrame containing a JTable using the model'
         JTable jTable = null
         new SwingBuilder().edt {
             jFrame = frame( title: 'Frame', size: [ 300, 300 ] as Dimension,
@@ -178,33 +178,33 @@ class SwingNavigatorTest extends Specification {
         }
         sleep 100
 
-        and:
+        when: 'navigateBreadthFirst() starting on the JTable'
         def visited = [ ]
-
-        when:
         def res = SwingNavigator.navigateBreadthFirst( jTable ) { item, row, col ->
             visited << [ item, row, col ]
             false
         }
 
-        then:
+        then: 'All cells of the JTable are visited and the visitor has access to row/column indexes'
         visited == [
                 [ 'Col 1', -1, 0 ], [ 'Col 2', -1, 1 ],
                 [ 'item 1 - Col 1', 0, 0 ], [ 'item 1 - Col 2', 0, 1 ],
                 [ 'item 2 - Col 1', 1, 0 ], [ 'item 2 - Col 2', 1, 1 ],
                 [ 'item 3 - Col 1', 2, 0 ], [ 'item 3 - Col 2', 2, 1 ]
         ]
-        !res // action never returned true
+
+        and: 'The method returns false'
+        !res
     }
 
-    def testNavigateBreadthFirstJTablePartialTree() {
-        given:
+    def "Can navigate Component Tree starting on a JTree partially"() {
+        given: 'The table model for a JTable'
         def tModel = [
                 [ firstCol: 'item 1 - Col 1' ],
                 [ firstCol: 'item 2 - Col 1' ],
         ]
 
-        and:
+        and: 'A real JFrame containing a JTable using the model'
         JTable jTable = null
         new SwingBuilder().edt {
             jFrame = frame( title: 'Frame', size: [ 300, 300 ] as Dimension,
@@ -220,20 +220,20 @@ class SwingNavigatorTest extends Specification {
         }
         sleep 100
 
-        and:
+        when: 'The cells of the JTable up to cell "item 1 - Col 1" are visited'
         def visited = [ ]
-
-        when:
         def res = SwingNavigator.navigateBreadthFirst( jTable ) { item, row, col ->
             visited << [ item, row, col ]
             item == 'item 1 - Col 1'
         }
 
-        then:
+        then: 'All cells up to "item 1 - Col 1" should have been visited'
         visited == [
                 [ 'Col 1', -1, 0 ],
                 [ 'item 1 - Col 1', 0, 0 ]
         ]
+
+        and: 'The method should return true'
         res
     }
 
