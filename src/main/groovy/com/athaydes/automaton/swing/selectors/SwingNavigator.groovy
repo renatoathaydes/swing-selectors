@@ -6,6 +6,8 @@ import javax.swing.JTable
 import javax.swing.JTree
 import javax.swing.tree.TreeModel
 import javax.swing.tree.TreeNode
+import java.awt.Component
+import java.awt.Window
 
 import static com.athaydes.automaton.ReflectionHelper.callMethodIfExists
 
@@ -32,33 +34,31 @@ class SwingNavigator {
     }
 
     /**
-     * Navigates the given tree, calling the given action for each node, including the root.
+     * Visits the nodes of the given tree, calling the given action for each node, including the root.
      * To stop navigating, action may return true
      * @param tree to be navigated
      * @param action to be called on each visited node. Return true to stop navigating.
      * @return true if action returned true for any node
      */
-    static boolean navigateBreadthFirst( JTree tree, Closure action ) {
-        navigateBreadthFirst( tree.model.root as TreeNode, tree.model, action )
+    static boolean visitTree( JTree tree, Closure action ) {
+        visitTreeNode( tree.model.root as TreeNode, tree.model, action )
     }
 
     /**
-     * Navigates the given tree, calling the given action for each node, including the startNode.
+     * Visits the given TreeNode branch, calling the given action for each node, including the startNode.
      * To stop navigating, action may return true
      * @param startNode node to start navigation from
      * @param model JTree model
      * @param action to be called on each visited node. Return true to stop navigating.
      * @return true if action returned true for any node
      */
-    static boolean navigateBreadthFirst( TreeNode startNode, TreeModel model, Closure action ) {
+    static boolean visitTreeNode( TreeNode startNode, TreeModel model, Closure action ) {
         if ( model ) {
             def nextLevel = [ startNode ]
             while ( nextLevel ) {
                 if ( visit( nextLevel, action ) ) return true
-                nextLevel = nextLevel.collect { node ->
-                    ( 0..<model.getChildCount( node ) ).collect { int i ->
-                        model.getChild( node, i )
-                    }
+                nextLevel = nextLevel.collectMany { node ->
+                    node.children().toList()
                 }.flatten()
             }
         }
@@ -66,58 +66,72 @@ class SwingNavigator {
     }
 
     /**
-     * Navigates the given table, calling the given action for each header and cell.
+     * Visits the given table, calling the given action for each header and cell.
      * To stop navigating, action may return true
      * @param table to navigate through
      * @param action to be called on each visited header/cell. Return true to stop navigating.
+     * May take 1 argument (the cell being visited), 2, or 3 (row, column).
      * @return true if action returned true for any header/cell
      */
-    static boolean navigateBreadthFirst( JTable table, Closure action ) {
-        def cols = ( 0..<table.model.columnCount )
-        def rows = ( 0..<table.model.rowCount )
-        for ( int col in cols ) {
-            if ( action( table.model.getColumnName( col ), -1, col ) ) return true
-        }
-        for ( int row in rows ) {
-            for ( int col in cols ) {
-                if ( action( getRenderedTableValue( table, row, col ), row, col ) ) return true
+    static boolean visitTable( JTable table, Closure action ) {
+        def invokeActionWithMax3Args = { item, row, col ->
+            switch ( action.maximumNumberOfParameters ) {
+                case 1: return action.call( item )
+                case 2: return action.call( item, row )
+                case 3: return action.call( item, row, col )
+                default: throw new IllegalArgumentException( 'Action must take 1 to 3 arguments' )
             }
         }
-        return false
+
+        def cols = ( 0..<table.model.columnCount )
+
+        if (cols.any { int col ->
+            invokeActionWithMax3Args( table.columnModel.getColumn( col ), -1, col )
+        } ) {
+            return true
+        }
+
+        def rows = ( 0..<table.model.rowCount )
+        return [ rows, cols ].combinations().any { int row, int col ->
+            invokeActionWithMax3Args(
+                    getTableCellRendererComponent( table, row, col ),
+                    row, col )
+        }
     }
 
-    /**
-     * Returns the text as rendered by the table cell's renderer component, if the renderer component
-     * has a getText() method. Returns the model value at the cell's position otherwise.
-     * @param table in question
-     * @param row of the value to get
-     * @param col of the value to get
-     * @return The rendered value or the model value if the renderer doesn't have a getText() method
-     */
-    private static getRenderedTableValue( JTable table, int row, int col ) {
+    private static Component getTableCellRendererComponent( JTable table, int row, int col ) {
         def value = table.model.getValueAt( row, col )
-        def rendererComp = table.getCellRenderer( row, col )
-                .getTableCellRendererComponent( table, value, false, false, row, col )
-        def text = callMethodIfExists( rendererComp, 'getText' )
-        return text ?: value
+        table.getCellRenderer( row, col )
+                .getTableCellRendererComponent( table, value, true, true, row, col )
     }
 
     private static List subItemsOf( component ) {
-        println "checking component $component"
         def contentPane = callMethodIfExists( component, 'getContentPane' )
         if ( contentPane ) {
-            return subItemsOf( contentPane )
+            component = contentPane
         }
-        List components = callMethodIfExists( component, 'getComponents' ) as List
-        List menuComponents = callMethodIfExists( component, 'getMenuComponents' ) as List
-
-        List result = components + menuComponents
-        println "Children of $component: $result"
-        return result
+        ( callMethodIfExists( component, 'getComponents' ) ?:
+                callMethodIfExists( component, 'getMenuComponents' ) ) as List
     }
 
     private static visit( List nextLevel, Closure action ) {
-        for ( item in nextLevel ) if ( action( item ) ) return true
+        for ( item in nextLevel ) {
+            if ( action( item ) ) return true
+            switch ( item ) {
+                case JTree:
+                    if ( visitTree( item as JTree, action ) )
+                        return true
+                    break
+                case JTable:
+                    if ( visitTable( item as JTable, action ) )
+                        return true
+                    break
+                case Window:
+                    if ( ( item as Window ).ownedWindows.any { subWindow ->
+                        navigateBreadthFirst( subWindow, action )
+                    } ) return true
+            }
+        }
         return false
     }
 

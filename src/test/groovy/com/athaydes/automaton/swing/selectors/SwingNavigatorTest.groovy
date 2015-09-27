@@ -9,6 +9,8 @@ import javax.swing.JFrame
 import javax.swing.JMenu
 import javax.swing.JTable
 import javax.swing.JTree
+import javax.swing.table.DefaultTableCellRenderer
+import javax.swing.table.TableColumn
 import java.awt.Component
 import java.awt.Container
 import java.awt.Dimension
@@ -100,7 +102,7 @@ class SwingNavigatorTest extends Specification {
         res
     }
 
-    def "Can navigate a whole JTree of components"() {
+    def "Can visit a whole JTree of components"() {
         given: 'A real JFrame containing a JTree with the default components'
         JTree mTree = null
         new SwingBuilder().edt {
@@ -114,8 +116,8 @@ class SwingNavigatorTest extends Specification {
         def visited = [ ]
         def action = { c -> visited += c; false }
 
-        when: 'navigateBreadthFirst() starting with the JFrame where the tree is'
-        def res = SwingNavigator.navigateBreadthFirst mTree, action
+        when: 'visitTree() starting with the JTree'
+        def res = SwingNavigator.visitTree mTree, action
 
         then: 'All components of the JTree are visited'
         visited.collect { it as String } == [ mTree.model.root as String,
@@ -128,7 +130,7 @@ class SwingNavigatorTest extends Specification {
         !res
     }
 
-    def "Can navigate part of a real tree of components"() {
+    def "Can visit part of a JTree"() {
         given: 'A real JFrame with a JTree in it'
         JTree mTree = null
         new SwingBuilder().edt {
@@ -142,8 +144,8 @@ class SwingNavigatorTest extends Specification {
         def visited = [ ]
         def action = { c -> visited += c; c.toString() == 'blue' }
 
-        when: 'navigateBreadthFirst() starting with the JFrame where the tree is'
-        def res = SwingNavigator.navigateBreadthFirst mTree, action
+        when: 'visitTree() starting with the JTree'
+        def res = SwingNavigator.visitTree mTree, action
 
         then: 'All components of the tree are visited until the blue component'
         visited.collect { it as String } == [ mTree.model.root as String,
@@ -153,7 +155,7 @@ class SwingNavigatorTest extends Specification {
         res
     }
 
-    def "Can navigate a Component Tree starting on a JTable"() {
+    def "Can visit a JTable fully"() {
         given: 'The table model for a JTable'
         def tModel = [
                 [ firstCol: 'item 1 - Col 1', secCol: 'item 1 - Col 2' ],
@@ -178,26 +180,44 @@ class SwingNavigatorTest extends Specification {
         }
         sleep 100
 
-        when: 'navigateBreadthFirst() starting on the JTable'
-        def visited = [ ]
-        def res = SwingNavigator.navigateBreadthFirst( jTable ) { item, row, col ->
+        when: 'visitTable() starting on the JTable'
+        def visited = [ ] as LinkedList
+        def res = SwingNavigator.visitTable( jTable ) { item, row, col ->
+            if ( item instanceof DefaultTableCellRenderer ) {
+                item = item.text // remember the text as the cell renderer is re-used amongst cells
+            }
             visited << [ item, row, col ]
             false
         }
 
-        then: 'All cells of the JTable are visited and the visitor has access to row/column indexes'
+        then: 'The Table Headers should be visited'
+        List firstVisit = visited.removeFirst()
+        def header1 = firstVisit[ 0 ]
+        header1 instanceof TableColumn && header1.headerValue == 'Col 1'
+        firstVisit[ 1 ] == -1
+        firstVisit[ 2 ] == 0
+
+        List secondVisit = visited.removeFirst()
+        def header2 = secondVisit[ 0 ]
+        header2 instanceof TableColumn && header2.headerValue == 'Col 2'
+        secondVisit[ 1 ] == -1
+        secondVisit[ 2 ] == 1
+
+        and: 'All cells of the JTable are visited and the visitor has access to row/column indexes'
         visited == [
-                [ 'Col 1', -1, 0 ], [ 'Col 2', -1, 1 ],
-                [ 'item 1 - Col 1', 0, 0 ], [ 'item 1 - Col 2', 0, 1 ],
-                [ 'item 2 - Col 1', 1, 0 ], [ 'item 2 - Col 2', 1, 1 ],
-                [ 'item 3 - Col 1', 2, 0 ], [ 'item 3 - Col 2', 2, 1 ]
-        ]
+                [ 'item 1 - Col 1', 0, 0 ],
+                [ 'item 2 - Col 1', 1, 0 ],
+                [ 'item 3 - Col 1', 2, 0 ],
+                [ 'item 1 - Col 2', 0, 1 ],
+                [ 'item 2 - Col 2', 1, 1 ],
+                [ 'item 3 - Col 2', 2, 1 ]
+        ] as LinkedList
 
         and: 'The method returns false'
         !res
     }
 
-    def "Can navigate Component Tree starting on a JTree partially"() {
+    def "Can visit JTable partially"() {
         given: 'The table model for a JTable'
         def tModel = [
                 [ firstCol: 'item 1 - Col 1' ],
@@ -221,17 +241,24 @@ class SwingNavigatorTest extends Specification {
         sleep 100
 
         when: 'The cells of the JTable up to cell "item 1 - Col 1" are visited'
-        def visited = [ ]
-        def res = SwingNavigator.navigateBreadthFirst( jTable ) { item, row, col ->
+        LinkedList<List> visited = [ ]
+        def res = SwingNavigator.visitTable( jTable ) { item, row, col ->
+            if ( item instanceof DefaultTableCellRenderer ) {
+                item = item.text // remember the text as the cell renderer is re-used amongst cells
+            }
             visited << [ item, row, col ]
             item == 'item 1 - Col 1'
         }
 
-        then: 'All cells up to "item 1 - Col 1" should have been visited'
+        then: 'The Table Headers should be visited'
+        List firstVisit = visited.removeFirst()
+        def header1 = firstVisit[ 0 ]
+        header1 instanceof TableColumn && header1.headerValue == 'Col 1'
+
+        and: 'All cells of the JTable up to the last cell requested are visited'
         visited == [
-                [ 'Col 1', -1, 0 ],
-                [ 'item 1 - Col 1', 0, 0 ]
-        ]
+                [ 'item 1 - Col 1', 0, 0 ],
+        ] as LinkedList
 
         and: 'The method should return true'
         res
