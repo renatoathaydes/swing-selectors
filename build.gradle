@@ -18,5 +18,7 @@ dependencies {
         transitive = false
     }
     testCompile group: 'cglib', name: 'cglib-nodep', version: '2.2'
-    testCompile group: 'com.athaydes', name: 'spock-reports', version: '1.2.7'
+    testCompile group: 'com.athaydes', name: 'spock-reports', version: '1.2.7', {
+        transitive = false
+    }
 }
