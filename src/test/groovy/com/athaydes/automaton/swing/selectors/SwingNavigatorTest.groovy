@@ -7,6 +7,8 @@ import javax.swing.JComponent
 import javax.swing.JDialog
 import javax.swing.JFrame
 import javax.swing.JMenu
+import javax.swing.JMenuBar
+import javax.swing.JMenuItem
 import javax.swing.JTable
 import javax.swing.JTree
 import javax.swing.table.DefaultTableCellRenderer
@@ -50,12 +52,20 @@ class SwingNavigatorTest extends Specification {
             getComponents() >> [ c2_1, c2cp ]
             toString() >> 'c2'
         }
+        def menuItem = Stub( JMenuItem ) {
+            toString() >> 'menuItem'
+        }
+        def menuBar = Stub( JMenuBar ) {
+            getComponents() >> [ menuItem ]
+            toString() >> 'menuBar'
+        }
         def rootPane = Stub( JComponent ) {
             getComponents() >> [ c1, c2 ]
             toString() >> 'rootPane'
         }
         def root = Stub( JDialog ) {
-            getContentPane() >> rootPane
+            getComponents() >> [ rootPane ]
+            getJMenuBar() >> menuBar
             toString() >> 'root'
         }
 
@@ -67,7 +77,7 @@ class SwingNavigatorTest extends Specification {
         def res = SwingNavigator.navigateBreadthFirst root, action
 
         then: 'All tree components are visited'
-        visited == [ root, c1, c2, c1a, c2_1, c2cp, c2_1a, c2_1b, c2cp1 ]
+        visited == [ root, rootPane, menuBar, c1, c2, menuItem, c1a, c2_1, c2cp, c2_1a, c2_1b, c2cp1 ]
 
         and: 'The method returns false'
         !res

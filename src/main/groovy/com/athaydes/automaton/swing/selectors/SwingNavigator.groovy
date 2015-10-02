@@ -25,7 +25,7 @@ class SwingNavigator {
      * @return true if action returned true for any Component
      */
     static boolean navigateBreadthFirst( root, Closure action ) {
-        List nextLevel = [ root ]
+        Collection nextLevel = [ root ]
         while ( nextLevel ) {
             if ( visit( nextLevel, action ) ) return true
             nextLevel = nextLevel.collectMany { c -> subItemsOf( c ) }.flatten()
@@ -112,13 +112,11 @@ class SwingNavigator {
                 .getTableCellRendererComponent( table, value, true, true, row, col )
     }
 
-    private static List subItemsOf( component ) {
-        def contentPane = callMethodIfExists( component, 'getContentPane' )
-        if ( contentPane ) {
-            component = contentPane
-        }
-        ( callMethodIfExists( component, 'getComponents' ) ?:
-                callMethodIfExists( component, 'getMenuComponents' ) ) as List
+    private static Collection subItemsOf( component ) {
+        def components = callMethodIfExists( component, 'getComponents' ) as List
+        def menuBar = callMethodIfExists( component, 'getJMenuBar' )
+        def menuComponents = callMethodIfExists( component, 'getMenuComponents' ) as List
+        return components + ( menuBar ?: [ ] ) + menuComponents
     }
 
     private static visit( List nextLevel, Closure action ) {

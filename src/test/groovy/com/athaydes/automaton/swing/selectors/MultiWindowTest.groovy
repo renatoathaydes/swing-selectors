@@ -6,6 +6,8 @@ import spock.lang.Specification
 import javax.swing.JDialog
 import javax.swing.JFrame
 import javax.swing.JLabel
+import javax.swing.JMenuBar
+import javax.swing.JMenuItem
 import javax.swing.JTable
 import javax.swing.JTree
 import javax.swing.table.DefaultTableCellRenderer
@@ -32,6 +34,11 @@ class MultiWindowTest extends Specification {
             mainFrame = frame( title: 'Frame', size: [ 300, 300 ] as Dimension,
                     location: [ 150, 50 ] as Point, show: false ) {
 
+                menuBar {
+                    menu( name: 'menu-button', text: "File" ) {
+                        menuItem( name: 'item-exit', text: "Exit" )
+                    }
+                }
                 dialog( size: [ 150, 150 ] as Dimension,
                         location: [ 250, 150 ] as Point,
                         title: 'Dialog',
@@ -97,6 +104,10 @@ class MultiWindowTest extends Specification {
 
         and: 'The JTree nodes were visited'
         allComponents.any { it instanceof TreeNode && it.toString() == 'red' }
+
+        and: 'The MenuBar was visited'
+        allComponents.any { it instanceof JMenuBar }
+        allComponents.any { it instanceof JMenuItem && it.text == 'Exit' }
     }
 
 }
