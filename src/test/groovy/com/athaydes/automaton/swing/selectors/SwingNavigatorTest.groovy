@@ -15,8 +15,6 @@ import java.awt.Component
 import java.awt.Container
 import java.awt.Dimension
 import java.awt.Point
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 class SwingNavigatorTest extends Specification {
 
@@ -107,14 +105,11 @@ class SwingNavigatorTest extends Specification {
     def "Can visit a whole JTree of components"() {
         given: 'A real JFrame containing a JTree with the default components'
         JTree mTree = null
-        def latch = new CountDownLatch( 1 )
-        new SwingBuilder().edt {
+        new SwingBuilder().build {
             frame( title: 'Frame', size: [ 300, 300 ] as Dimension, show: false ) {
                 mTree = tree( rootVisible: false )
             }
-            latch.countDown()
         }
-        assert latch.await( 2, TimeUnit.SECONDS )
 
         and: 'An action that remembers all components visited and always returns false'
         def visited = [ ]
@@ -137,14 +132,11 @@ class SwingNavigatorTest extends Specification {
     def "Can visit part of a JTree"() {
         given: 'A real JFrame with a JTree in it'
         JTree mTree = null
-        def latch = new CountDownLatch( 1 )
-        new SwingBuilder().edt {
+        new SwingBuilder().build {
             frame( title: 'Frame', size: [ 300, 300 ] as Dimension, show: false ) {
                 mTree = tree( rootVisible: false )
             }
-            latch.countDown()
         }
-        assert latch.await( 2, TimeUnit.SECONDS )
 
         and: 'An action that remembers all components visited and returns false when visiting the blue component'
         def visited = [ ]
@@ -171,8 +163,7 @@ class SwingNavigatorTest extends Specification {
 
         and: 'A real JFrame containing a JTable using the model'
         JTable jTable = null
-        def latch = new CountDownLatch( 1 )
-        new SwingBuilder().edt {
+        new SwingBuilder().build {
             jFrame = frame( title: 'Frame', size: [ 300, 300 ] as Dimension,
                     location: [ 150, 50 ] as Point, show: false ) {
                 scrollPane {
@@ -184,12 +175,10 @@ class SwingNavigatorTest extends Specification {
                     }
                 }
             }
-            latch.countDown()
         }
-        assert latch.await( 2, TimeUnit.SECONDS )
 
         when: 'visitTable() starting on the JTable'
-        def visited = [ ] as LinkedList
+        def visited = [ ] as LinkedList<List>
         def res = SwingNavigator.visitTable( jTable ) { item, row, col ->
             if ( item instanceof DefaultTableCellRenderer ) {
                 item = item.text // remember the text as the cell renderer is re-used amongst cells
@@ -234,8 +223,7 @@ class SwingNavigatorTest extends Specification {
 
         and: 'A real JFrame containing a JTable using the model'
         JTable jTable = null
-        def latch = new CountDownLatch( 1 )
-        new SwingBuilder().edt {
+        new SwingBuilder().build {
             jFrame = frame( title: 'Frame', size: [ 300, 300 ] as Dimension,
                     location: [ 150, 50 ] as Point, show: false ) {
                 scrollPane {
@@ -246,9 +234,7 @@ class SwingNavigatorTest extends Specification {
                     }
                 }
             }
-            latch.countDown()
         }
-        assert latch.await( 2, TimeUnit.SECONDS )
 
         when: 'The cells of the JTable up to cell "item 1 - Col 1" are visited'
         LinkedList<List> visited = [ ]
