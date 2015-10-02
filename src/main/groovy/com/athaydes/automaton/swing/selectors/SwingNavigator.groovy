@@ -67,6 +67,13 @@ class SwingNavigator {
 
     /**
      * Visits the given table, calling the given action for each header and cell.
+     *
+     * The visited components are:
+     * <ul>
+     *     <li>headers: the actual TableColumns (row index is -1)</li>
+     *     <li>cells: the TableCellRendererComponent of each cell (row and column indexes start at 0)</li>
+     * </ul>
+     *
      * To stop navigating, action may return true
      * @param table to navigate through
      * @param action to be called on each visited header/cell. Return true to stop navigating.
@@ -85,7 +92,7 @@ class SwingNavigator {
 
         def cols = ( 0..<table.model.columnCount )
 
-        if (cols.any { int col ->
+        if ( cols.any { int col ->
             invokeActionWithMax3Args( table.columnModel.getColumn( col ), -1, col )
         } ) {
             return true
