@@ -2,6 +2,7 @@ group 'com.athaydes.automaton'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'groovy'
+apply plugin: 'maven'
 
 sourceCompatibility = 1.7
 
