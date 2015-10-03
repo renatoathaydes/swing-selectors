@@ -64,8 +64,7 @@ class SwingNavigatorTest extends Specification {
             toString() >> 'rootPane'
         }
         def root = Stub( JDialog ) {
-            getComponents() >> [ rootPane ]
-            getJMenuBar() >> menuBar
+            getComponents() >> [ rootPane, menuBar ]
             toString() >> 'root'
         }
 

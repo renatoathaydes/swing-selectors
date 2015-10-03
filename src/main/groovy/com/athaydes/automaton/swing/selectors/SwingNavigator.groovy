@@ -114,9 +114,8 @@ class SwingNavigator {
 
     private static Collection subItemsOf( component ) {
         def components = callMethodIfExists( component, 'getComponents' ) as List
-        def menuBar = callMethodIfExists( component, 'getJMenuBar' )
         def menuComponents = callMethodIfExists( component, 'getMenuComponents' ) as List
-        return components + ( menuBar ?: [ ] ) + menuComponents
+        return components + menuComponents
     }
 
     private static visit( List nextLevel, Closure action ) {

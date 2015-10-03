@@ -82,32 +82,36 @@ class MultiWindowTest extends Specification {
         }
 
         then: 'All windows should be visited'
-        allComponents.any { it instanceof JFrame && it.title == 'Frame' }
-        allComponents.any { it instanceof JDialog && it.title == 'Dialog' }
-        allComponents.any { it instanceof Window && it.name == 'some window' }
+        def hasOneOf = { Closure predicate ->
+            assert allComponents.count( predicate ) == 1
+            return true
+        }
+        hasOneOf { it instanceof JFrame && it.title == 'Frame' }
+        hasOneOf { it instanceof JDialog && it.title == 'Dialog' }
+        hasOneOf { it instanceof Window && it.name == 'some window' }
 
         and: 'Components of each window were visited'
-        allComponents.any { it instanceof JLabel && it.text == 'This is a dialog' }
-        allComponents.any { it instanceof JLabel && it.text == 'A window' }
-        allComponents.count { it instanceof JTable } == 1
-        allComponents.count { it instanceof JTree } == 1
+        hasOneOf { it instanceof JLabel && it.text == 'This is a dialog' }
+        hasOneOf { it instanceof JLabel && it.text == 'A window' }
+        hasOneOf { it instanceof JTable }
+        hasOneOf { it instanceof JTree }
 
         and: 'The JTable headers and cells were visited'
-        allComponents.any { it instanceof TableColumn && it.headerValue == 'Col 1' }
-        allComponents.any { it instanceof TableColumn && it.headerValue == 'Col 2' }
-        allComponents.any { it == 'item 1 - Col 1' }
-        allComponents.any { it == 'item 1 - Col 2' }
-        allComponents.any { it == 'item 2 - Col 1' }
-        allComponents.any { it == 'item 2 - Col 2' }
-        allComponents.any { it == 'item 3 - Col 1' }
-        allComponents.any { it == 'item 3 - Col 2' }
+        hasOneOf { it instanceof TableColumn && it.headerValue == 'Col 1' }
+        hasOneOf { it instanceof TableColumn && it.headerValue == 'Col 2' }
+        hasOneOf { it == 'item 1 - Col 1' }
+        hasOneOf { it == 'item 1 - Col 2' }
+        hasOneOf { it == 'item 2 - Col 1' }
+        hasOneOf { it == 'item 2 - Col 2' }
+        hasOneOf { it == 'item 3 - Col 1' }
+        hasOneOf { it == 'item 3 - Col 2' }
 
         and: 'The JTree nodes were visited'
-        allComponents.any { it instanceof TreeNode && it.toString() == 'red' }
+        hasOneOf { it instanceof TreeNode && it.toString() == 'red' }
 
         and: 'The MenuBar was visited'
-        allComponents.any { it instanceof JMenuBar }
-        allComponents.any { it instanceof JMenuItem && it.text == 'Exit' }
+        hasOneOf { it instanceof JMenuBar }
+        hasOneOf { it instanceof JMenuItem && it.text == 'Exit' }
     }
 
 }
