@@ -99,6 +99,9 @@ class SwingNavigator {
         }
 
         def rows = ( 0..<table.model.rowCount )
+        if (!rows) {
+            return false // combinations().any {} fails if rows is empty
+        }
         return [ rows, cols ].combinations().any { int row, int col ->
             invokeActionWithMax3Args(
                     getTableCellRendererComponent( table, row, col ),
