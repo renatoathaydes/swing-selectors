@@ -6,8 +6,10 @@ import groovy.swing.SwingBuilder
 
 import javax.swing.JButton
 import javax.swing.JFrame
+import javax.swing.JLabel
 import javax.swing.JTable
 import javax.swing.JTextArea
+import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.event.ActionListener
@@ -54,6 +56,10 @@ class DemoUI {
 
         def queryField = S.selectWithName( 'query-field' ) as JTextArea
         queryField.font = new Font( 'Courier', Font.PLAIN, 14 )
+
+        def status = S.selectWithName( 'status-label' ) as JLabel
+        status.font = new Font( 'Helvetica', Font.ITALIC, 14 )
+
         consumeNextAction( frame, nextActions )
     }
 
@@ -64,16 +70,28 @@ class DemoUI {
         queryField.text = queryForLocation( 'Stockholm, Sweden' )
 
         def table = S.selectWithType( JTable )
+        def status = S.selectWithName( 'status-label' ) as JLabel
+        def currentWeather = S.selectWithName( 'current-weather' ) as JLabel
 
         def runButton = S.selectWithName( 'run-button' ) as JButton
         runButton.addActionListener { event ->
             Thread.start {
-                final response = client.run( queryField.text )
-                builder.edt {
-                    forecastData.clear()
-                    forecastData.addAll response.forecast
-                    table.revalidate()
-                    table.repaint()
+                try {
+                    final response = client.run( queryField.text )
+                    builder.edt {
+                        status.text = response.title
+                        status.foreground = Color.BLACK
+                        currentWeather.text = "Currently: ${response.condition.temp}C, ${response.condition.text}"
+                        forecastData.clear()
+                        forecastData.addAll response.forecast
+                        table.revalidate()
+                        table.repaint()
+                    }
+                } catch ( e ) {
+                    builder.edt {
+                        status.text = e.toString()
+                        status.foreground = Color.RED
+                    }
                 }
             }
         } as ActionListener
@@ -104,8 +122,12 @@ class DemoUI {
                                 constraints: gbc( gridx: 1, gridy: 2, ipady: 4, fill: HORIZONTAL ) )
                         button( 'Run', name: 'run-button', preferredSize: [ 100, 25 ] as Dimension,
                                 constraints: gbc( gridx: 1, gridy: 3, fill: NONE ) )
+                        label( name: 'status-label',
+                                constraints: gbc( gridx: 1, gridy: 4, fill: HORIZONTAL ) )
+                        label( name: 'current-weather',
+                                constraints: gbc( gridx: 1, gridy: 5, fill: HORIZONTAL ) )
                         def t1 = table( name: 'forecast-table',
-                                constraints: gbc( gridx: 1, gridy: 5, ipady: 4, fill: HORIZONTAL ) ) {
+                                constraints: gbc( gridx: 1, gridy: 7, ipady: 4, fill: HORIZONTAL ) ) {
                             tableModel( list: forecastData ) {
                                 tableColumns( [
                                         [ name: 'Date', property: 'date' ],
@@ -115,7 +137,7 @@ class DemoUI {
                                 ] )
                             }
                         }
-                        widget( constraints: gbc( gridx: 1, gridy: 4, fill: HORIZONTAL ), t1.tableHeader )
+                        widget( constraints: gbc( gridx: 1, gridy: 6, fill: HORIZONTAL ), t1.tableHeader )
                     }
                 }
             }, nextActions
