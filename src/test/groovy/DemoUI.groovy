@@ -69,30 +69,13 @@ class DemoUI {
         def queryField = S.selectWithName( 'query-field' ) as JTextArea
         queryField.text = queryForLocation( 'Stockholm, Sweden' )
 
-        def table = S.selectWithType( JTable )
-        def status = S.selectWithName( 'status-label' ) as JLabel
-        def currentWeather = S.selectWithName( 'current-weather' ) as JLabel
-
         def runButton = S.selectWithName( 'run-button' ) as JButton
         runButton.addActionListener { event ->
-            Thread.start {
-                try {
-                    final response = client.run( queryField.text )
-                    builder.edt {
-                        status.text = response.title
-                        status.foreground = Color.BLACK
-                        currentWeather.text = "Currently: ${response.condition.temp}C, ${response.condition.text}"
-                        forecastData.clear()
-                        forecastData.addAll response.forecast
-                        table.revalidate()
-                        table.repaint()
-                    }
-                } catch ( e ) {
-                    builder.edt {
-                        status.text = e.toString()
-                        status.foreground = Color.RED
-                    }
-                }
+            client.run( queryField.text ) { response ->
+                handleApiResponse( response,
+                        S.selectWithType( JTable ),
+                        S.selectWithName( 'status-label' ) as JLabel,
+                        S.selectWithName( 'current-weather' ) as JLabel )
             }
         } as ActionListener
         consumeNextAction( frame, nextActions )
@@ -144,6 +127,25 @@ class DemoUI {
         }
     }
 
+    void handleApiResponse( response, JTable table, JLabel status, JLabel currentWeather ) {
+        if ( response instanceof Throwable ) {
+            builder.edt {
+                status.text = response.message
+                status.foreground = Color.RED
+            }
+        } else {
+            builder.edt {
+                status.text = response.title
+                status.foreground = Color.BLACK
+                currentWeather.text = "Currently: ${response.condition.temp}C, ${response.condition.text}"
+                forecastData.clear()
+                forecastData.addAll response.forecast
+                table.revalidate()
+                table.repaint()
+            }
+        }
+    }
+
     static main( args ) {
         new DemoUI().show()
     }
@@ -152,21 +154,23 @@ class DemoUI {
 
 class WeatherApiClient {
 
-    def run( String query ) {
+    def run( String query, Closure callback ) {
         def connection = new URL( "https://query.yahooapis.com/v1/public/yql?q=" +
                 URLEncoder.encode( query, 'UTF-8' ) )
                 .openConnection() as HttpURLConnection
         connection.setRequestProperty( 'Accept', 'application/json' )
 
-        if ( connection.responseCode == 200 ) {
-            def json = connection.inputStream.withCloseable { inStream ->
-                new JsonSlurper().parse( inStream as InputStream )
+        Thread.start {
+            if ( connection.responseCode == 200 ) {
+                def json = connection.inputStream.withCloseable { inStream ->
+                    new JsonSlurper().parse( inStream as InputStream )
+                }
+                println "Full response: $json"
+                callback json.query.results.channel.item
+            } else {
+                callback new RuntimeException( "Failed request: ${connection.responseCode}" +
+                        " - ${connection.inputStream.text}" )
             }
-            println "Full response: $json"
-            return json.query.results.channel.item
-        } else {
-            throw new RuntimeException( "Failed request: ${connection.responseCode}" +
-                    " - ${connection.inputStream.text}" )
         }
     }
 }
