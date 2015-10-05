@@ -4,6 +4,8 @@ import com.athaydes.automaton.swing.selectors.SwingSelector
 import groovy.json.JsonSlurper
 import groovy.swing.SwingBuilder
 
+import javax.imageio.ImageIO
+import javax.swing.ImageIcon
 import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JLabel
@@ -28,6 +30,8 @@ import static java.awt.GridBagConstraints.VERTICAL
 class DemoUI {
 
     static final defaultForeground = Color.WHITE
+    static final defaultBackground = new Color( 138, 43, 226 )
+
     final builder = new SwingBuilder()
     final client = new WeatherApiClient()
     final forecastData = [ ]
@@ -61,7 +65,10 @@ class DemoUI {
         final S = new SwingSelector( root: frame )
 
         ( S.selectWithName( 'main-panel' ) as JPanel ).with {
-            background = new Color( 138, 43, 226 )
+            background = defaultBackground
+        }
+        ( S.selectWithName( 'current-panel' ) as JPanel ).with {
+            background = defaultBackground
         }
 
         S.selectAllWithType( JLabel ).each { label ->
@@ -96,7 +103,8 @@ class DemoUI {
                 handleApiResponse( response,
                         S.selectWithType( JTable ),
                         S.selectWithName( 'status-label' ) as JLabel,
-                        S.selectWithName( 'current-weather' ) as JLabel )
+                        S.selectWithName( 'current-weather' ) as JLabel,
+                        S.selectWithName( 'current-icon' ) as JLabel )
             }
         } as ActionListener
         consumeNextAction( frame, nextActions )
@@ -138,8 +146,12 @@ class DemoUI {
                                 constraints: cnst( row: 1, col: 3 ) )
                         label( name: 'status-label',
                                 constraints: cnst( row: 1, col: 4, fill: HORIZONTAL ) )
-                        label( name: 'current-weather',
-                                constraints: cnst( row: 1, col: 5, fill: HORIZONTAL ) )
+                        panel( name: 'current-panel',
+                                constraints: cnst( row: 1, col: 5, fill: HORIZONTAL ) ) {
+                            borderLayout()
+                            label( name: 'current-weather', constraints: BorderLayout.WEST )
+                            label( name: 'current-icon', constraints: BorderLayout.EAST )
+                        }
                         def t1 = table( name: 'forecast-table',
                                 constraints: cnst( row: 1, col: 7, ipady: 4, fill: BOTH ) ) {
                             tableModel( list: forecastData ) {
@@ -159,13 +171,22 @@ class DemoUI {
         }
     }
 
-    void handleApiResponse( response, JTable table, JLabel status, JLabel currentWeather ) {
+    void handleApiResponse( response, JTable table, JLabel status,
+                            JLabel currentWeather, JLabel currentIcon ) {
         if ( response instanceof Throwable ) {
             builder.edt {
                 status.text = response.message
                 status.foreground = Color.RED
             }
         } else {
+            Thread.start {
+                // the html returned is not parseable, so we get the img link the hard way
+                def html = response.description as String
+                def imgLink = html.substring( html.indexOf( 'http://' ), html.indexOf( '.gif' ) + 4 )
+                println imgLink
+                def weatherIcon = new ImageIcon( ImageIO.read( new URL( imgLink ).newInputStream() ) )
+                builder.edt { currentIcon.icon = weatherIcon }
+            }
             builder.edt {
                 status.text = response.title
                 status.foreground = defaultForeground
