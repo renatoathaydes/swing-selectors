@@ -7,21 +7,27 @@ import groovy.swing.SwingBuilder
 import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JLabel
+import javax.swing.JPanel
 import javax.swing.JTable
 import javax.swing.JTextArea
+import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
+import java.awt.Insets
 import java.awt.event.ActionListener
 
+import static java.awt.GridBagConstraints.BOTH
 import static java.awt.GridBagConstraints.HORIZONTAL
 import static java.awt.GridBagConstraints.NONE
+import static java.awt.GridBagConstraints.VERTICAL
 
 /**
  *
  */
 class DemoUI {
 
+    static final defaultForeground = Color.WHITE
     final builder = new SwingBuilder()
     final client = new WeatherApiClient()
     final forecastData = [ ]
@@ -54,11 +60,26 @@ class DemoUI {
         }
         final S = new SwingSelector( root: frame )
 
-        def queryField = S.selectWithName( 'query-field' ) as JTextArea
-        queryField.font = new Font( 'Courier', Font.PLAIN, 14 )
+        ( S.selectWithName( 'main-panel' ) as JPanel ).with {
+            background = new Color( 138, 43, 226 )
+        }
+
+        S.selectAllWithType( JLabel ).each { label ->
+            label.foreground = defaultForeground
+        }
+
+        ( S.selectWithName( 'query-field' ) as JTextArea ).with {
+            font = new Font( 'sans-serif', Font.PLAIN, 14 )
+            foreground = new Color( 55, 209, 55 )
+        }
 
         def status = S.selectWithName( 'status-label' ) as JLabel
         status.font = new Font( 'Helvetica', Font.ITALIC, 14 )
+
+        ( S.selectWithName( 'run-button' ) as JButton ).with {
+            background = new Color( 0, 191, 255 )
+            foreground = Color.WHITE
+        }
 
         consumeNextAction( frame, nextActions )
     }
@@ -90,27 +111,37 @@ class DemoUI {
                         editable: false )
             }
         }
+        final defaultInsets = new Insets( 4, 4, 4, 4 )
+        final cnst = { Map c ->
+            builder.gbc( gridx: c.row, gridy: c.col, insets: defaultInsets,
+                    ipadx: c.ipadx ?: 0, ipady: c.ipady ?: 0,
+                    fill: c.fill ?: NONE,
+                    weightx: c.fill in [ HORIZONTAL, BOTH ] ? 1.0 : 0.0,
+                    weighty: c.fill in [ VERTICAL, BOTH ] ? 1.0 : 0.0 )
+        }
+
         builder.edt {
-            consumeNextAction frame( title: 'Yahoo! Weather API Client',
-                    size: [ 350, 350 ] as Dimension,
+            def jframe = frame( title: 'Yahoo! Weather API Client',
+                    size: [ 500, 400 ] as Dimension,
                     defaultCloseOperation: JFrame.EXIT_ON_CLOSE,
                     locationRelativeTo: null,
                     show: true ) {
-                scrollPane {
-                    panel {
+                borderLayout()
+                scrollPane( constraints: BorderLayout.CENTER ) {
+                    panel( name: 'main-panel' ) {
                         gridBagLayout()
                         label( 'Y! query:',
-                                constraints: gbc( gridx: 1, gridy: 1, ipady: 4 ) )
+                                constraints: cnst( row: 1, col: 1 ) )
                         textArea( name: 'query-field', rows: 5, columns: 30,
-                                constraints: gbc( gridx: 1, gridy: 2, ipady: 4, fill: HORIZONTAL ) )
+                                constraints: cnst( row: 1, col: 2, fill: HORIZONTAL ) )
                         button( 'Run', name: 'run-button', preferredSize: [ 100, 25 ] as Dimension,
-                                constraints: gbc( gridx: 1, gridy: 3, fill: NONE ) )
+                                constraints: cnst( row: 1, col: 3 ) )
                         label( name: 'status-label',
-                                constraints: gbc( gridx: 1, gridy: 4, fill: HORIZONTAL ) )
+                                constraints: cnst( row: 1, col: 4, fill: HORIZONTAL ) )
                         label( name: 'current-weather',
-                                constraints: gbc( gridx: 1, gridy: 5, fill: HORIZONTAL ) )
+                                constraints: cnst( row: 1, col: 5, fill: HORIZONTAL ) )
                         def t1 = table( name: 'forecast-table',
-                                constraints: gbc( gridx: 1, gridy: 7, ipady: 4, fill: HORIZONTAL ) ) {
+                                constraints: cnst( row: 1, col: 7, ipady: 4, fill: BOTH ) ) {
                             tableModel( list: forecastData ) {
                                 tableColumns( [
                                         [ name: 'Date', property: 'date' ],
@@ -120,10 +151,11 @@ class DemoUI {
                                 ] )
                             }
                         }
-                        widget( constraints: gbc( gridx: 1, gridy: 6, fill: HORIZONTAL ), t1.tableHeader )
+                        widget( constraints: cnst( row: 1, col: 6, fill: HORIZONTAL ), t1.tableHeader )
                     }
                 }
-            }, nextActions
+            }
+            consumeNextAction jframe, nextActions
         }
     }
 
@@ -136,7 +168,7 @@ class DemoUI {
         } else {
             builder.edt {
                 status.text = response.title
-                status.foreground = Color.BLACK
+                status.foreground = defaultForeground
                 currentWeather.text = "Currently: ${response.condition.temp}C, ${response.condition.text}"
                 forecastData.clear()
                 forecastData.addAll response.forecast
