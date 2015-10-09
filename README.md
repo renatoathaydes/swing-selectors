@@ -15,7 +15,7 @@ selector.selectAllWithType( JLabel ).each { label ->
 This will set the foreground of all `JLabel`s under `frame`
 (any Swing component, such as a `JFrame`) to a `defaultForeground` Color.
 
-Check out my blog [post about swing-selectors](https://sites.google.com/a/athaydes.com/renato-athaydes/posts/usingswing-selectorstocreatebeautifuluiswithgroovy)
+> Check out my blog [post about swing-selectors](https://sites.google.com/a/athaydes.com/renato-athaydes/posts/usingswing-selectorstocreatebeautifuluiswithgroovy)
 for a nice sample usage.
 
 ## Selecting multiple items
