@@ -104,10 +104,10 @@ SwingNavigator.navigateBreadthFirst( frame ) { component ->
 
 The public methods of `SwingNavigator` are:
 
-* boolean navigateBreadthFirst( Object root, Closure visitor )
-* boolean visitTable( JTable table, Closure visitor )
-* boolean visitTree( JTree tree, Closure visitor )
-* boolean visitTreeNode( TreeNode node, TreeModel model, Closure visitor )
+* `boolean navigateBreadthFirst( Object root, Closure visitor )`
+* `boolean visitTable( JTable table, Closure visitor )`
+* `boolean visitTree( JTree tree, Closure visitor )`
+* `boolean visitTreeNode( TreeNode node, TreeModel model, Closure visitor )`
 
 All methods return whatever the visitor returned for the last visited component.
 
