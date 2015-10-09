@@ -1,8 +1,12 @@
+plugins {
+    id "groovy"
+    id "maven"
+    id "com.jfrog.bintray" version "1.3.1"
+}
+
 group 'com.athaydes.automaton'
 version '1.0-SNAPSHOT'
 
-apply plugin: 'groovy'
-apply plugin: 'maven'
 
 sourceCompatibility = 1.7
 
@@ -23,3 +27,43 @@ dependencies {
         transitive = false
     }
 }
+
+jar {
+    manifest {
+        attributes(
+                "Implementation-Title": "Swing-Selectors",
+                "Implementation-Version": version )
+    }
+}
+
+task sourcesJar( type: Jar, dependsOn: classes ) {
+    from sourceSets.main.allSource
+    classifier "sources"
+    extension "jar"
+}
+
+publishing {
+    publications {
+        mavenJava( MavenPublication ) {
+            from components.java
+            artifact sourcesJar
+        }
+    }
+}
+
+bintray {
+    user = project.hasProperty( "bintrayUserName" ) ? bintrayUserName : null
+    key = project.hasProperty( "bintrayApiKey" ) ? bintrayApiKey : null
+    publications = [ "mavenJava" ]
+    pkg {
+        repo = 'maven'
+        name = 'swing-selectors'
+        licenses = [ 'Apache-2.0' ]
+        desc = 'Swing-Selectors is a library for selecting Swing UI components'
+        websiteUrl = 'https://github.com/renatoathaydes/Swing-Selectors'
+        issueTrackerUrl = 'https://github.com/renatoathaydes/Swing-Selectors/issues'
+        labels = [ 'groovy', 'java', 'swing', 'Automaton' ]
+        publicDownloadNumbers = true
+    }
+}
+bintrayUpload.dependsOn build, sourcesJar
