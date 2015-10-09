@@ -58,6 +58,16 @@ class SwingSelector {
     }
 
     /**
+     * Selects a Swing item for which the given visitor returns Groovy truth.
+     * @param visitor a closure which takes a Swing item as argument, returning an Object satisfying Groovy truth
+     * if the Swing item is to be included in the result.
+     * @return the selected Swing item or null if none is selected.
+     */
+    def select( Closure visitor ) {
+        firstOrNull selectAll( 1, visitor )
+    }
+
+    /**
      * Select all elements with the given type.
      *
      * Notice that instances of subtypes of the given type are also selected.
@@ -66,7 +76,7 @@ class SwingSelector {
      * @return all instances of the given type.
      */
     def <T> List<T> selectAllWithType( Class<T> type, int limit = Integer.MAX_VALUE ) {
-        selectItems( limit ) { item -> type.isInstance( item ) } as List<T>
+        selectAll( limit ) { item -> type.isInstance( item ) } as List<T>
     }
 
     /**
@@ -78,7 +88,7 @@ class SwingSelector {
      * @return all elements with the given text.
      */
     def List selectAllWithText( String text, int limit = Integer.MAX_VALUE ) {
-        selectItems( limit ) { item ->
+        selectAll( limit ) { item ->
             switch ( item ) {
                 case TableColumn: return ( item as TableColumn ).headerValue == text
                 case TreeNode: return ( item as TreeNode ).toString() == text
@@ -95,9 +105,19 @@ class SwingSelector {
      * @return all elements with the given name.
      */
     def List selectAllWithName( String name, int limit = Integer.MAX_VALUE ) {
-        selectItems( limit ) { item ->
+        selectAll( limit ) { item ->
             callMethodIfExists( item, 'getName' ) == name
         }
+    }
+
+    /**
+     * Selects all Swing items for which the given visitor returns Groovy truth.
+     * @param visitor a closure which takes a Swing item as argument, returning an Object satisfying Groovy truth
+     * if the Swing item is to be included in the result.
+     * @return List of all Swing items that have been selected.
+     */
+    List selectAll( Closure visitor ) {
+        selectAll( Integer.MAX_VALUE, visitor )
     }
 
     /**
@@ -107,7 +127,7 @@ class SwingSelector {
      * if the Swing item is to be included in the result.
      * @return List of all Swing items that have been selected.
      */
-    List selectItems( int limit, Closure visitor ) {
+    List selectAll( int limit, Closure visitor ) {
         List result = [ ]
         if ( limit < 1 ) {
             return result

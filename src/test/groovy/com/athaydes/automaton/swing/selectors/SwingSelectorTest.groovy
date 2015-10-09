@@ -9,6 +9,7 @@ import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.swing.JTextArea
 import javax.swing.JTextField
+import javax.swing.JWindow
 import javax.swing.table.TableCellRenderer
 import javax.swing.table.TableColumn
 import javax.swing.tree.TreeNode
@@ -125,11 +126,46 @@ class SwingSelectorTest extends Specification {
         'write something...' | { List list -> list?.size() == 2 && list.any { it instanceof JTextArea } }
     }
 
+    def "Can select all elements meeting some predicate"() {
+        given: 'The large UI used by this test'
+
+        when: 'Trying to select existing components by predicate'
+        def result = selector.selectAll( predicate )
+
+        then: 'The number of items selected is as expected'
+        result.size() == count
+
+        where:
+        count || predicate
+        2     || { it instanceof TableColumn }
+        5     || { it instanceof JLabel }
+        1     || { it instanceof JWindow }
+        3     || { it instanceof JTextField || it instanceof JTextArea }
+    }
+
+    def "Trying to select items meeting impossible conditions always results in null"() {
+        given: 'The large UI used by this test'
+
+        when: 'Trying to select an existing components with a impossible predicate'
+        def result = selector.select( predicate )
+
+        then: 'Should always return null'
+        result == null
+
+        where:
+        predicate << [
+                { it instanceof Boolean },
+                { it instanceof Number },
+                { it == null }
+        ]
+    }
+
+
     def "Stops navigating as soon as the visitor returns true"() {
         given: 'The large UI used by this test'
 
         when: 'Selecting all items up to an instance of JFrame being met'
-        def result = selector.selectItems( 100 ) { item ->
+        def result = selector.selectAll( 100 ) { item ->
             item instanceof JFrame
         }
 
@@ -142,7 +178,7 @@ class SwingSelectorTest extends Specification {
         given: 'The large UI used by this test'
 
         when: 'Selecting up to a certain number of items unconditionally'
-        def result = selector.selectItems( limit ) { true }
+        def result = selector.selectAll( limit ) { true }
 
         then: 'Only the limit number of items should have been visited'
         result.size() == limit
