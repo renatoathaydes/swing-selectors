@@ -174,6 +174,20 @@ class SwingSelectorTest extends Specification {
         result.first() instanceof JFrame
     }
 
+    def "Should be possible to instantiate a SwingSelector without giving it a root"() {
+        given: 'The large UI used by this test'
+        and: 'A new SwingSelector without an explicit root component'
+        def selector = new SwingSelector()
+
+        when: 'Selecting an item that exists in the UI'
+        def result = selector.select { item ->
+            item instanceof JFrame
+        }
+
+        then: 'The item is correctly found'
+        result instanceof JFrame
+    }
+
     def "Stops navigating as soon as the limit is reached"() {
         given: 'The large UI used by this test'
 

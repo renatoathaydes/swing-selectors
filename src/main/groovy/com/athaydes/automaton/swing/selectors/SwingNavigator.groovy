@@ -2,14 +2,14 @@ package com.athaydes.automaton.swing.selectors
 
 import groovy.transform.CompileStatic
 
+import javax.swing.JMenu
 import javax.swing.JTable
 import javax.swing.JTree
 import javax.swing.tree.TreeModel
 import javax.swing.tree.TreeNode
 import java.awt.Component
+import java.awt.Container
 import java.awt.Window
-
-import static com.athaydes.automaton.ReflectionHelper.callMethodIfExists
 
 /**
  * Methods to navigate through a Swing component tree.
@@ -99,7 +99,7 @@ class SwingNavigator {
         }
 
         def rows = ( 0..<table.model.rowCount )
-        if (!rows) {
+        if ( !rows ) {
             return false // combinations().any {} fails if rows is empty
         }
         return [ rows, cols ].combinations().any { int row, int col ->
@@ -116,9 +116,18 @@ class SwingNavigator {
     }
 
     private static Collection subItemsOf( component ) {
-        def components = callMethodIfExists( component, 'getComponents' ) as List
-        def menuComponents = callMethodIfExists( component, 'getMenuComponents' ) as List
-        return components + menuComponents
+        List result = [ ]
+
+        if ( component instanceof Container ) {
+            result.addAll( component.components )
+        }
+        if ( component instanceof JMenu ) {
+            result.addAll( component.menuComponents )
+        }
+        //   def components = callMethodIfExists( component, 'getComponents' ) as List
+        //   def menuComponents = callMethodIfExists( component, 'getMenuComponents' ) as List
+        //   return components + menuComponents
+        return result
     }
 
     private static visit( List nextLevel, Closure action ) {

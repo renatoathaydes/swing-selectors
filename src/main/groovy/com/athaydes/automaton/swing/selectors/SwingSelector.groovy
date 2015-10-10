@@ -1,12 +1,13 @@
 package com.athaydes.automaton.swing.selectors
 
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 
 import javax.swing.table.TableColumn
 import javax.swing.tree.TreeNode
+import java.awt.Window
 
 import static com.athaydes.automaton.ReflectionHelper.callMethodIfExists
+import static java.util.Collections.emptyList
 
 /**
  * A Swing component selector.
@@ -17,13 +18,26 @@ import static com.athaydes.automaton.ReflectionHelper.callMethodIfExists
  * If a method to select a single element is used and the element is not found, the return value will be null.
  */
 @CompileStatic
-@Canonical
 class SwingSelector {
 
     /**
      * The root element to search from
      */
-    def root = null
+    def root
+
+    /**
+     * Create a SwingSelector that will search for components under the given root.
+     *
+     * @param root root of the Swing tree to consider or Map containing the component under the 'root' key.
+     * If not given, tries to get the first
+     * Swing Window given by <code>java.awt.Window.getWindows()</code>.
+     */
+    SwingSelector( root = null ) {
+        this.root = root instanceof Map ?
+                root[ 'root' ] :
+                root ?: ( Window.windows.size() > 0 ? Window.windows.first() : null )
+        assert this.root, "No root Swing component given and no Swing window can be found"
+    }
 
     /**
      * Select an element with the given type.
@@ -128,10 +142,11 @@ class SwingSelector {
      * @return List of all Swing items that have been selected.
      */
     List selectAll( int limit, Closure visitor ) {
-        List result = [ ]
         if ( limit < 1 ) {
-            return result
+            return emptyList()
         }
+        List result = new ArrayList( Math.min( 16, limit ) )
+
         SwingNavigator.navigateBreadthFirst( root ) { component ->
             if ( visitor.call( component ) ) {
                 result << component
