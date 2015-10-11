@@ -1,10 +1,12 @@
 package com.athaydes.automaton.swing.selectors
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Log
 
 import javax.swing.table.TableColumn
 import javax.swing.tree.TreeNode
 import java.awt.Window
+import java.util.concurrent.CountDownLatch
 
 import static com.athaydes.automaton.ReflectionHelper.callMethodIfExists
 import static java.util.Collections.emptyList
@@ -17,6 +19,7 @@ import static java.util.Collections.emptyList
  *
  * If a method to select a single element is used and the element is not found, the return value will be null.
  */
+@Log
 @CompileStatic
 class SwingSelector {
 
@@ -24,6 +27,9 @@ class SwingSelector {
      * The root element to search from
      */
     def root
+
+    final boolean useCache
+    private volatile Object[] cachedComponents
 
     /**
      * Create a SwingSelector that will search for components under the given root.
@@ -33,10 +39,58 @@ class SwingSelector {
      * Swing Window given by <code>java.awt.Window.getWindows()</code>.
      */
     SwingSelector( root = null ) {
-        this.root = root instanceof Map ?
-                root[ 'root' ] :
-                root ?: ( Window.windows.size() > 0 ? Window.windows.first() : null )
+        boolean enableCache = true
+        if ( root instanceof Map ) {
+            def config = root as Map
+            this.root = config.root
+            if ( config.containsKey( 'useCache' ) ) {
+                enableCache = config.useCache
+            }
+        } else if ( root == null ) {
+            this.root = ( Window.windows.size() > 0 ? Window.windows.first() : null )
+        } else {
+            this.root = root
+        }
+
+        this.useCache = enableCache
+
         assert this.root, "No root Swing component given and no Swing window can be found"
+
+        revalidateCache()
+    }
+
+    private CountDownLatch cache() {
+        final cacheLatch = new CountDownLatch( 1 )
+        Thread.start {
+            List newCache = [ ]
+            def startTime = System.currentTimeMillis()
+            SwingNavigator.navigateBreadthFirst( root ) {
+                newCache << it
+                false
+            }
+            cachedComponents = newCache.toArray()
+            cacheLatch.countDown()
+            def totalTime = System.currentTimeMillis() - startTime
+            log.info "Cached ${newCache.size()} components in $totalTime ms"
+        }
+        return cacheLatch
+    }
+
+    /**
+     * If caching is enabled, rebuild the cache in a different Thread.
+     *
+     * Notice that the cache is automatically built only once, when the
+     * SwingSelector is initialized. If the UI is updated, this method must
+     * be called by the application to update the cache.
+     *
+     * @return latch which allows the caller to wait for the caching operation
+     * to complete.
+     */
+    CountDownLatch revalidateCache() {
+        if ( useCache ) {
+            return cache()
+        }
+        return new CountDownLatch( 0 )
     }
 
     /**
@@ -147,13 +201,24 @@ class SwingSelector {
         }
         List result = new ArrayList( Math.min( 16, limit ) )
 
-        SwingNavigator.navigateBreadthFirst( root ) { component ->
+        def explorer = { component ->
             if ( visitor.call( component ) ) {
                 result << component
                 return result.size() >= limit
             }
             return false
         }
+
+        if ( cachedComponents != null && useCache )
+            for ( component in cachedComponents ) {
+                if ( explorer( component ) ) {
+                    break
+                }
+            }
+        else {
+            SwingNavigator.navigateBreadthFirst( root, explorer )
+        }
+
         return result
     }
 
@@ -167,3 +232,4 @@ class SwingSelector {
     }
 
 }
+

@@ -16,7 +16,7 @@ class ReflectionHelper {
      * @return value returned by the method call, or the empty list if the method does not exist
      */
     static callMethodIfExists( object, String methodName, Object... args ) {
-        def methods = object?.metaClass?.respondsTo( object, methodName, args )
+        def methods = object.metaClass.respondsTo( object, methodName, args )
         if ( methods ) {
             try {
                 return methods.first().invoke( object, args )

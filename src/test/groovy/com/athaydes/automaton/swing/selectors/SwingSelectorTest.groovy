@@ -51,7 +51,7 @@ class SwingSelectorTest extends Specification {
     }
 
     @Subject
-    def selector = new SwingSelector( root: jframe )
+    def selector = new SwingSelector( root: jframe, useCache: false )
 
     @SuppressWarnings( "GroovyAssignabilityCheck" )
     def "Can select an element by type"() {

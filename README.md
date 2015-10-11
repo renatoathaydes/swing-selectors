@@ -71,6 +71,43 @@ def fileComponent = selector.selectWithText( 'File' )
 def inputField = selector.select { it instanceof JTextField && it.name == 'input-field' }
 ```
 
+## SwingSelector cache
+
+By default, `SwingSelector` uses a cache to make finding components faster
+(one order of magnitude faster in the [performance tests]
+(src/test/groovy/com/athaydes/automaton/swing/selectors/PerformanceTest.groovy)
+I performed).
+
+For this reason, finding all components (slowest operation) matching a predicate
+usually takes just a few milli-seconds. The tests, which use a very large UI with
+over 7000 components, show that it might take less than 5 ms to find all 4343 instances
+of `JLabel`, for example.
+
+However, caching may be a problem for highly dynamic UIs.
+
+To manage this problem, you can manually update the cache by revalidating it:
+
+```groovy
+def selector = new SwingSelector( root: frame )
+
+// UI changes take place...
+
+selector.revalidateCache()
+
+// caching happens in a separate Thread...
+// so if you want to block until the cache is ready you must explicitly do it
+boolean done = selector.revalidateCache().await( 2, TimeUnit.SECONDS )
+if (!done) {
+    println "Cache not ready yet!"
+}
+```
+
+To completely turn off caching, build `SwingSelector` as follows:
+
+```groovy
+def selector = new SwingSelector( root: frame, useCache: false )
+```
+
 ## Navigating through the component tree
 
 The `SwingNavigator` class has a few methods for navigating the Swing component tree, the main one
