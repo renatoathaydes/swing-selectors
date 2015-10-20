@@ -18,6 +18,29 @@ This will set the foreground of all `JLabel`s under `frame`
 > Check out my blog [post about swing-selectors](https://sites.google.com/a/athaydes.com/renato-athaydes/posts/usingswing-selectorstocreatebeautifuluiswithgroovy)
 for a nice sample usage.
 
+## Requirements
+
+> Swing-Selectors is hosted on [JCenter](https://bintray.com/bintray/jcenter),
+so you must add the jcenter repository to your project.
+
+Add a dependency on swing-selectors:
+
+#### Gradle
+
+```groovy
+compile 'com.athaydes.automaton:swing-selectors:1.0'
+```
+
+#### Maven
+
+```xml
+<dependency>
+  <groupId>com.athaydes.automaton</groupId>
+  <artifactId>swing-selectors</artifactId>
+  <version>1.0</version>
+</dependency>
+```
+
 ## Selecting multiple items
 
 The `SwingSelector` class has the following methods to select multiple items:
