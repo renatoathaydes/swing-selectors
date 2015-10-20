@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'com.athaydes.automaton'
-version '1.0-SNAPSHOT'
+version '1.0'
 
 
 sourceCompatibility = 1.7
@@ -62,6 +62,7 @@ bintray {
         desc = 'Swing-Selectors is a library for selecting Swing UI components'
         websiteUrl = 'https://github.com/renatoathaydes/Swing-Selectors'
         issueTrackerUrl = 'https://github.com/renatoathaydes/Swing-Selectors/issues'
+        vcsUrl = 'https://github.com/renatoathaydes/swing-selectors.git'
         labels = [ 'groovy', 'java', 'swing', 'Automaton' ]
         publicDownloadNumbers = true
     }
