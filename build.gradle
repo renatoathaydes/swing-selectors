@@ -1,14 +1,14 @@
 plugins {
     id "groovy"
-    id "maven-publish"
-    id "com.jfrog.bintray" version "1.3.1"
+    id "maven"
+    id "com.jfrog.bintray" version "1.4"
 }
 
 group 'com.athaydes.automaton'
-version '1.0'
-
+version '1.0.1'
 
 sourceCompatibility = 1.7
+targetCompatibility = 1.7
 
 repositories {
     mavenLocal()
@@ -36,17 +36,52 @@ jar {
     }
 }
 
-task sourcesJar( type: Jar, dependsOn: classes ) {
-    from sourceSets.main.allSource
-    classifier "sources"
-    extension "jar"
+/* Publishing config */
+
+task javadocJar( type: Jar ) {
+    classifier = 'javadoc'
+    from javadoc
 }
 
-publishing {
-    publications {
-        mavenJava( MavenPublication ) {
-            from components.java
-            artifact sourcesJar
+task sourcesJar( type: Jar ) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+// add all the info required by Maven Central to the pom
+configure( install.repositories.mavenInstaller ) {
+    //repository(url: "file://$buildDir")
+    pom.project {
+        inceptionYear '2015'
+        name project.name
+        packaging 'jar'
+        description project.description
+
+        url 'https://github.com/renatoathaydes/Swing-Selectors'
+
+        scm {
+            connection 'git@github.com:renatoathaydes/Swing-Selectors.git'
+            developerConnection 'git@github.com:renatoathaydes/Swing-Selectors.git'
+            url 'https://github.com/renatoathaydes/Swing-Selectors'
+        }
+
+        licenses {
+            license {
+                name 'The Apache License, Version 2.0'
+                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+            }
+        }
+
+        developers {
+            developer {
+                id 'renatoathaydes'
+                name 'Renato Athaydes'
+                email 'renato@athaydes.com'
+            }
         }
     }
 }
@@ -54,7 +89,8 @@ publishing {
 bintray {
     user = project.hasProperty( "bintrayUserName" ) ? bintrayUserName : null
     key = project.hasProperty( "bintrayApiKey" ) ? bintrayApiKey : null
-    publications = [ "mavenJava" ]
+    configurations = [ 'archives' ]
+    publish = true
     pkg {
         repo = 'maven'
         name = 'swing-selectors'
@@ -65,6 +101,21 @@ bintray {
         vcsUrl = 'https://github.com/renatoathaydes/swing-selectors.git'
         labels = [ 'groovy', 'java', 'swing', 'Automaton' ]
         publicDownloadNumbers = true
+
+        //noinspection GroovyAssignabilityCheck
+        version {
+            name = project.version
+            vcsTag = project.version
+            gpg {
+                sign = true
+            }
+            mavenCentralSync {
+                sync = true
+                user = ossrhUsername
+                password = ossrhPassword
+                close = '1' // '0' to NOT close
+            }
+        }
     }
 }
 bintrayUpload.dependsOn build, sourcesJar
