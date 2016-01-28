@@ -20,15 +20,15 @@ for a nice sample usage.
 
 ## Requirements
 
-> Swing-Selectors is hosted on [JCenter](https://bintray.com/bintray/jcenter),
-so you must add the jcenter repository to your project.
+> Swing-Selectors is hosted on [JCenter](https://bintray.com/bintray/jcenter)
+  and Maven Central.
 
 Add a dependency on swing-selectors:
 
 #### Gradle
 
 ```groovy
-compile 'com.athaydes.automaton:swing-selectors:1.0'
+compile 'com.athaydes.automaton:swing-selectors:1.0.1'
 ```
 
 #### Maven
@@ -37,7 +37,7 @@ compile 'com.athaydes.automaton:swing-selectors:1.0'
 <dependency>
   <groupId>com.athaydes.automaton</groupId>
   <artifactId>swing-selectors</artifactId>
-  <version>1.0</version>
+  <version>1.0.1</version>
 </dependency>
 ```
 
